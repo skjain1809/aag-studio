@@ -1,0 +1,1098 @@
+<!DOCTYPE html>
+<html lang="en">
+<!--
+  ╔══════════════════════════════════════════════════════╗
+  ║   aag.ai — Creator Studio POC                       ║
+  ║   Free tier: Pollinations.ai + Anthropic Claude API  ║
+  ║                                                      ║
+  ║   DEPLOY TO GITHUB PAGES:                           ║
+  ║   1. Create new GitHub repo                         ║
+  ║   2. Upload this file as index.html                 ║
+  ║   3. Settings → Pages → Branch: main → Save        ║
+  ║   4. Live at https://[user].github.io/[repo]        ║
+  ╚══════════════════════════════════════════════════════╝
+-->
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>aag.ai — Creator Studio</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;1,300&family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --gold:#C9A853; --gold-s:#F5ECD3; --dark:#0A0A0A;
+      --bg:#F5F4F1; --panel:#fff; --bdr:#E8E4DC;
+      --muted:#8A8680; --danger:#DC2626; --success:#16A34A; --warn:#D97706;
+    }
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+    body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--dark);min-height:100vh;}
+    ::-webkit-scrollbar{width:4px;height:4px;}
+    ::-webkit-scrollbar-track{background:transparent;}
+    ::-webkit-scrollbar-thumb{background:var(--bdr);border-radius:2px;}
+
+    /* Shimmer */
+    @keyframes shimmer{0%{background-position:200% 0;}100%{background-position:-200% 0;}}
+    .shimmer{background:linear-gradient(90deg,#F0EEE8 25%,#E8E4DC 50%,#F0EEE8 75%);background-size:200% 100%;animation:shimmer 1.5s infinite;}
+
+    /* Pulse gold */
+    @keyframes pulseRing{0%,100%{box-shadow:0 0 0 0 rgba(201,168,83,.5);}50%{box-shadow:0 0 0 6px rgba(201,168,83,0);}}
+    .pulse{animation:pulseRing 2s infinite;}
+
+    /* Glow */
+    @keyframes glow{0%,100%{opacity:1;}50%{opacity:.3;}}
+    .glow{animation:glow 1.8s ease-in-out infinite;}
+
+    /* Spin */
+    @keyframes spin{to{transform:rotate(360deg);}}
+    .spin{animation:spin .8s linear infinite;}
+
+    /* FadeUp */
+    @keyframes fadeUp{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:translateY(0);}}
+    .fadeUp{animation:fadeUp .4s ease forwards;}
+
+    /* Slide steps */
+    .step{display:none;} .step.active{display:block;}
+
+    /* Inputs */
+    input[type=text],input[type=password],select,textarea{
+      font-family:'Outfit',sans-serif;font-size:13px;color:var(--dark);
+      background:white;border:1.5px solid var(--bdr);border-radius:7px;
+      padding:8px 11px;outline:none;transition:border-color .15s;width:100%;
+    }
+    input:focus,select:focus,textarea:focus{border-color:var(--gold);}
+    textarea{resize:vertical;min-height:70px;}
+
+    /* Buttons */
+    .btn{display:inline-flex;align-items:center;gap:6px;padding:9px 18px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;border:none;transition:opacity .15s,transform .1s;font-family:'Outfit',sans-serif;}
+    .btn:hover{opacity:.88;} .btn:active{transform:scale(.97);}
+    .btn-primary{background:var(--dark);color:white;}
+    .btn-gold{background:var(--gold);color:var(--dark);}
+    .btn-danger{background:var(--danger);color:white;}
+    .btn-success{background:var(--success);color:white;}
+    .btn-outline{background:white;color:var(--dark);border:1.5px solid var(--bdr);}
+    .btn-sm{padding:5px 11px;font-size:11.5px;border-radius:6px;}
+    .btn-xs{padding:3px 8px;font-size:10.5px;border-radius:5px;}
+    .btn:disabled{opacity:.4;cursor:not-allowed;pointer-events:none;}
+
+    /* Drop zone */
+    .drop-zone{border:2px dashed var(--bdr);border-radius:12px;transition:all .2s;cursor:pointer;}
+    .drop-zone:hover,.drop-zone.drag-over{border-color:var(--gold);background:var(--gold-s);}
+
+    /* Shot card */
+    .shot-card{background:white;border-radius:10px;border:1.5px solid var(--bdr);overflow:hidden;transition:border-color .25s,box-shadow .25s;}
+    .shot-card.approved{border-color:var(--success);box-shadow:0 0 0 3px rgba(22,163,74,.1);}
+    .shot-card.error{border-color:var(--danger);}
+
+    /* Image aspect box */
+    .img-box{position:relative;aspect-ratio:1;overflow:hidden;background:#F9F8F5;}
+    .img-box img{width:100%;height:100%;object-fit:contain;opacity:0;transition:opacity .5s;display:block;}
+    .img-box img.loaded{opacity:1;}
+    .img-box .shimmer-cover{position:absolute;inset:0;}
+
+    /* Badge */
+    .badge{display:inline-flex;align-items:center;gap:3px;padding:2px 8px;border-radius:100px;font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;}
+
+    /* Log terminal */
+    .log-term{background:#0C0E0D;font-family:'JetBrains Mono',monospace;font-size:10.5px;line-height:1.9;}
+    .l-ts{color:#4A7A4A;} .l-ai{color:#C9A853;font-weight:500;} .l-usr{color:#5A8EC8;font-weight:500;}
+    .l-sys{color:#8A6BAA;font-weight:500;} .l-ok{color:#3EA858;font-weight:500;} .l-warn{color:#D97706;font-weight:500;}
+    .l-c{color:#C4C0B6;} .l-cok{color:#72C87A;} .l-cwarn{color:#E8B86A;}
+
+    /* Phase stepper */
+    .phase-node{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+    .phase-line{flex:1;height:1px;max-width:80px;}
+
+    /* Modal */
+    .modal{position:fixed;inset:0;background:rgba(10,10,10,.6);z-index:100;display:none;align-items:center;justify-content:center;backdrop-filter:blur(4px);}
+    .modal.open{display:flex;}
+
+    /* Progress bar */
+    .pbar{height:3px;background:var(--bdr);border-radius:2px;overflow:hidden;}
+    .pfill{height:100%;background:var(--gold);border-radius:2px;transition:width .4s ease;}
+
+    /* Tooltip */
+    [title]{cursor:pointer;}
+
+    /* Responsive grid */
+    .shots-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;}
+    @media(max-width:900px){.shots-grid{grid-template-columns:repeat(2,1fr);}}
+    @media(max-width:600px){.shots-grid{grid-template-columns:1fr;}}
+
+    /* Analysis card */
+    .analysis-chip{display:inline-flex;align-items:center;gap:4px;padding:3px 9px;background:var(--gold-s);border-radius:100px;font-size:10.5px;font-weight:600;color:#78530A;border:1px solid #E8D49A;}
+  </style>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════
+     HEADER (always visible)
+     ═══════════════════════════════════════════ -->
+<header style="background:white;border-bottom:1.5px solid var(--bdr);padding:0 20px;height:56px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:40;">
+  <!-- Logo -->
+  <div style="display:flex;align-items:center;gap:8px;">
+    <div style="width:30px;height:30px;background:var(--dark);border-radius:7px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+      <svg width="16" height="17" viewBox="0 0 16 17" fill="none">
+        <path d="M8 2C5.8 5.5 4 7 4 10C4 12.2 5.8 14 8 14C10.2 14 12 12.2 12 10C12 7 10.2 5.5 8 2Z" fill="#C9A853"/>
+        <path d="M8 6.5C7 8 6 9 6 10.5C6 11.4 6.9 12 8 12C9.1 12 10 11.4 10 10.5C10 9 9 8 8 6.5Z" fill="rgba(255,255,255,.5)"/>
+      </svg>
+    </div>
+    <span style="font-family:'Cormorant Garamond',serif;font-size:20px;font-weight:600;letter-spacing:-.3px;">aag</span>
+    <span style="font-family:'Outfit',sans-serif;font-size:13px;color:var(--gold);font-weight:400;">.ai</span>
+    <div style="width:1px;height:18px;background:var(--bdr);margin:0 4px;"></div>
+    <span style="font-size:11px;font-weight:500;color:var(--muted);letter-spacing:.05em;text-transform:uppercase;">Creator Studio</span>
+  </div>
+
+  <!-- Phase Stepper -->
+  <div style="display:flex;align-items:center;gap:0;" id="stepper">
+    <!-- Phase 1 -->
+    <div style="display:flex;align-items:center;gap:7px;">
+      <div class="phase-node" id="pn1" style="background:var(--dark);">
+        <svg width="11" height="11" viewBox="0 0 11 11" fill="none"><path d="M2 5.5L4.5 8L9 3" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </div>
+      <div><div style="font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;font-weight:600;">Phase 1</div><div style="font-size:11.5px;font-weight:700;" id="pl1">Foundation</div></div>
+    </div>
+    <div class="phase-line" style="background:linear-gradient(to right,var(--dark),var(--gold));margin:0 10px;" id="pc1"></div>
+
+    <!-- Phase 2 -->
+    <div style="display:flex;align-items:center;gap:7px;">
+      <div class="phase-node pulse" id="pn2" style="background:var(--gold);">
+        <span style="font-size:11px;font-weight:800;color:white;">2</span>
+      </div>
+      <div><div style="font-size:9px;color:var(--gold);text-transform:uppercase;letter-spacing:.05em;font-weight:700;" id="pl2-sub">● Upcoming</div><div style="font-size:11.5px;font-weight:700;" id="pl2">Generation</div></div>
+    </div>
+    <div class="phase-line" style="background:var(--bdr);margin:0 10px;" id="pc2"></div>
+
+    <!-- Phase 3 -->
+    <div style="display:flex;align-items:center;gap:7px;opacity:.45;" id="phase3-wrap">
+      <div class="phase-node" style="border:1.5px solid var(--bdr);background:var(--bg);">
+        <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><rect x="1.5" y="4" width="7" height="5.5" rx="1" stroke="var(--muted)" stroke-width="1.2"/><path d="M3 4V3C3 1.9 3.9 1 5 1C6.1 1 7 1.9 7 3V4" stroke="var(--muted)" stroke-width="1.2"/></svg>
+      </div>
+      <div><div style="font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;font-weight:600;">Phase 3</div><div style="font-size:11.5px;font-weight:700;color:var(--muted);">Review</div></div>
+    </div>
+  </div>
+
+  <!-- Right: key badge + new session -->
+  <div style="display:flex;align-items:center;gap:8px;">
+    <div id="key-badge" style="display:none;align-items:center;gap:5px;padding:4px 10px;background:var(--bg);border:1px solid var(--bdr);border-radius:100px;font-size:11px;cursor:pointer;" onclick="clearKey()" title="Click to remove API key">
+      <div class="glow" style="width:6px;height:6px;border-radius:50%;background:var(--success);"></div>
+      <span style="font-weight:600;color:var(--dark);">Claude Enhanced</span>
+      <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M2.5 2.5L7.5 7.5M7.5 2.5L2.5 7.5" stroke="var(--muted)" stroke-width="1.3" stroke-linecap="round"/></svg>
+    </div>
+    <button class="btn btn-outline btn-sm" onclick="newSession()" id="new-session-btn" style="display:none;">
+      <svg width="11" height="11" viewBox="0 0 11 11" fill="none"><path d="M5.5 1.5V4M5.5 1.5L3.5 3.5M5.5 1.5L7.5 3.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/><path d="M2 7C2.5 8.8 4 10 5.5 10C7.9 10 10 8 10 5.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+      New Session
+    </button>
+  </div>
+</header>
+
+
+<!-- ═══════════════════════════════════════════
+     STEP 1 — FOUNDATION
+     ═══════════════════════════════════════════ -->
+<div class="step active" id="step1" style="max-width:1100px;margin:0 auto;padding:28px 20px 60px;">
+
+  <!-- API Key Setup Banner -->
+  <div id="key-setup" style="background:white;border:1.5px solid var(--bdr);border-radius:10px;padding:14px 18px;margin-bottom:22px;display:flex;align-items:center;gap:14px;flex-wrap:wrap;">
+    <div style="width:32px;height:32px;border-radius:8px;background:#EEF2FF;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6.5" stroke="#6366F1" stroke-width="1.3"/><path d="M8 5V8.5L10 10" stroke="#6366F1" stroke-width="1.4" stroke-linecap="round"/></svg>
+    </div>
+    <div style="flex:1;min-width:200px;">
+      <div style="font-size:13px;font-weight:700;">Optional: Claude API Key for enhanced analysis</div>
+      <div style="font-size:11px;color:var(--muted);margin-top:2px;">Without a key: aag.ai generates smart prompts from your brief. With a key: Claude vision analyses your product for precision prompts. Key stays in your browser only.</div>
+    </div>
+    <div style="display:flex;gap:8px;align-items:center;flex-shrink:0;">
+      <input type="password" id="api-key-input" placeholder="sk-ant-api03-..." style="width:240px;" onkeydown="if(event.key==='Enter')saveKey()">
+      <button class="btn btn-primary btn-sm" onclick="saveKey()">Activate</button>
+      <button class="btn btn-outline btn-sm" onclick="dismissKeySetup()" title="Continue without key">Skip</button>
+    </div>
+  </div>
+
+  <!-- Main 2-col layout -->
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;align-items:start;">
+
+    <!-- LEFT: Upload -->
+    <div>
+      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:8px;">Product Image</div>
+      <div class="drop-zone" id="drop-zone" onclick="document.getElementById('file-input').click()" style="min-height:280px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:20px;" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)" ondrop="handleDrop(event)">
+        <input type="file" id="file-input" accept="image/*" style="display:none;" onchange="handleFileSelect(event)">
+        <div id="upload-placeholder">
+          <div style="width:56px;height:56px;border-radius:12px;background:var(--gold-s);display:flex;align-items:center;justify-content:center;margin:0 auto 10px;">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M12 3V15M12 3L8 7M12 3L16 7" stroke="var(--gold)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M3 17V20C3 20.6 3.4 21 4 21H20C20.6 21 21 20.6 21 20V17" stroke="var(--gold)" stroke-width="1.8" stroke-linecap="round"/></svg>
+          </div>
+          <div style="font-size:14px;font-weight:600;text-align:center;">Drop your product image here</div>
+          <div style="font-size:12px;color:var(--muted);text-align:center;margin-top:4px;">JPG, PNG, WebP — max 10MB</div>
+          <div style="font-size:11px;color:var(--muted);text-align:center;margin-top:8px;padding:4px 12px;background:var(--bg);border-radius:100px;display:inline-block;">Click to browse</div>
+        </div>
+        <div id="upload-preview" style="display:none;width:100%;text-align:center;">
+          <img id="preview-img" style="max-height:220px;max-width:100%;border-radius:8px;object-fit:contain;" src="" alt="Product preview">
+          <div style="margin-top:8px;font-size:11.5px;color:var(--muted);" id="preview-filename"></div>
+          <button class="btn btn-outline btn-sm" style="margin-top:6px;" onclick="clearImage(event)">
+            <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M2 2L8 8M8 2L2 8" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>Change image
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- RIGHT: Brief form -->
+    <div>
+      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:8px;">Creative Brief</div>
+      <div style="background:white;border:1.5px solid var(--bdr);border-radius:10px;padding:16px;display:flex;flex-direction:column;gap:11px;">
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+          <div>
+            <label style="font-size:11px;font-weight:600;color:var(--muted);display:block;margin-bottom:4px;">Brand Name *</label>
+            <input type="text" id="f-brand" placeholder="e.g. VOLT Athletics">
+          </div>
+          <div>
+            <label style="font-size:11px;font-weight:600;color:var(--muted);display:block;margin-bottom:4px;">Product Name *</label>
+            <input type="text" id="f-product" placeholder="e.g. Apex Terrain Runner">
+          </div>
+        </div>
+
+        <div>
+          <label style="font-size:11px;font-weight:600;color:var(--muted);display:block;margin-bottom:4px;">Product Description</label>
+          <input type="text" id="f-desc" placeholder="e.g. high-performance trail runner with breathable mesh">
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+          <div>
+            <label style="font-size:11px;font-weight:600;color:var(--muted);display:block;margin-bottom:4px;">Visual Direction</label>
+            <select id="f-style">
+              <option value="High-Energy Athletic">High-Energy Athletic</option>
+              <option value="Urban Minimalist">Urban Minimalist</option>
+              <option value="Luxury Premium">Luxury Premium</option>
+              <option value="Earthy & Natural">Earthy & Natural</option>
+              <option value="Bold Streetwear">Bold Streetwear</option>
+              <option value="Clean Tech">Clean Tech</option>
+            </select>
+          </div>
+          <div>
+            <label style="font-size:11px;font-weight:600;color:var(--muted);display:block;margin-bottom:4px;">Lighting Style</label>
+            <select id="f-lighting">
+              <option value="High-contrast studio with sharp shadows">High-Contrast Studio</option>
+              <option value="Soft natural window light, diffused shadows">Natural Soft Light</option>
+              <option value="Bright high-key studio, minimal shadows">High-Key Studio</option>
+              <option value="Dramatic rim lighting with neon color accents">Neon Rim Accents</option>
+              <option value="Warm golden hour outdoor light">Golden Hour</option>
+            </select>
+          </div>
+        </div>
+
+        <div>
+          <label style="font-size:11px;font-weight:600;color:var(--muted);display:block;margin-bottom:4px;">Key Selling Points</label>
+          <textarea id="f-keypoints" placeholder="e.g. breathable mesh upper, memory foam insole, recycled rubber outsole..."></textarea>
+        </div>
+
+        <div>
+          <label style="font-size:11px;font-weight:600;color:var(--muted);display:block;margin-bottom:4px;">Color Palette Hint</label>
+          <input type="text" id="f-palette" placeholder="e.g. navy blue, white, gold accents">
+        </div>
+
+        <!-- Shot selection -->
+        <div>
+          <label style="font-size:11px;font-weight:600;color:var(--muted);display:block;margin-bottom:6px;">Shots to Generate</label>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;">
+            <label style="display:flex;align-items:center;gap:7px;padding:6px 8px;border-radius:5px;background:var(--bg);cursor:pointer;font-size:12px;font-weight:500;">
+              <input type="checkbox" checked value="lateral" class="shot-check" style="width:auto;border:none;accent-color:var(--gold);"> Lateral (Side)
+            </label>
+            <label style="display:flex;align-items:center;gap:7px;padding:6px 8px;border-radius:5px;background:var(--bg);cursor:pointer;font-size:12px;font-weight:500;">
+              <input type="checkbox" checked value="medial" class="shot-check" style="width:auto;border:none;accent-color:var(--gold);"> Medial (Inside)
+            </label>
+            <label style="display:flex;align-items:center;gap:7px;padding:6px 8px;border-radius:5px;background:var(--bg);cursor:pointer;font-size:12px;font-weight:500;">
+              <input type="checkbox" checked value="top_down" class="shot-check" style="width:auto;border:none;accent-color:var(--gold);"> Top-down
+            </label>
+            <label style="display:flex;align-items:center;gap:7px;padding:6px 8px;border-radius:5px;background:var(--bg);cursor:pointer;font-size:12px;font-weight:500;">
+              <input type="checkbox" checked value="front_45" class="shot-check" style="width:auto;border:none;accent-color:var(--gold);"> 45° Front
+            </label>
+            <label style="display:flex;align-items:center;gap:7px;padding:6px 8px;border-radius:5px;background:var(--bg);cursor:pointer;font-size:12px;font-weight:500;">
+              <input type="checkbox" checked value="heel" class="shot-check" style="width:auto;border:none;accent-color:var(--gold);"> Heel View
+            </label>
+            <label style="display:flex;align-items:center;gap:7px;padding:6px 8px;border-radius:5px;background:var(--bg);cursor:pointer;font-size:12px;font-weight:500;">
+              <input type="checkbox" checked value="outsole" class="shot-check" style="width:auto;border:none;accent-color:var(--gold);"> Outsole (Bottom)
+            </label>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Generate button -->
+      <button class="btn btn-gold" id="gen-btn" onclick="startGeneration()" style="width:100%;margin-top:12px;justify-content:center;padding:13px;font-size:14px;">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 1L10 6H15L11 9.5L12.5 15L8 12L3.5 15L5 9.5L1 6H6L8 1Z" stroke="var(--dark)" stroke-width="1.5" stroke-linejoin="round" fill="var(--gold-s)"/></svg>
+        Analyse &amp; Generate Shots
+      </button>
+      <div style="text-align:center;font-size:11px;color:var(--muted);margin-top:6px;" id="gen-mode-note">
+        ✦ Basic mode — prompts built from brief. Add API key above for Claude vision analysis.
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ═══════════════════════════════════════════
+     STEP 2 — GENERATION
+     ═══════════════════════════════════════════ -->
+<div class="step" id="step2" style="max-width:1100px;margin:0 auto;padding:28px 20px 60px;">
+
+  <!-- Analysis card -->
+  <div id="analysis-card" style="background:white;border:1.5px solid var(--bdr);border-radius:10px;padding:16px 18px;margin-bottom:22px;">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+      <div id="analysis-spinner" style="display:flex;"><div class="spin" style="width:16px;height:16px;border:2px solid var(--bdr);border-top-color:var(--gold);border-radius:50%;"></div></div>
+      <span style="font-size:13px;font-weight:700;" id="analysis-title">Analysing product with Claude Vision…</span>
+    </div>
+    <div id="analysis-body" style="font-size:12px;color:var(--muted);line-height:1.6;">Sending product image and creative brief to Claude…</div>
+    <div id="analysis-chips" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:10px;"></div>
+    <div class="pbar" style="margin-top:10px;"><div class="pfill" id="gen-progress" style="width:0%;"></div></div>
+    <div style="display:flex;justify-content:space-between;font-size:10.5px;color:var(--muted);margin-top:4px;">
+      <span id="gen-status-text">Initialising…</span>
+      <span id="gen-count-text">0 / 0</span>
+    </div>
+  </div>
+
+  <!-- Shot grid (loading state) -->
+  <div class="shots-grid" id="gen-grid"></div>
+
+  <div style="text-align:center;margin-top:24px;" id="review-cta" style="display:none;">
+    <button class="btn btn-primary" onclick="goToReview()" style="padding:11px 28px;font-size:14px;">
+      Continue to Review
+      <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M3 6.5H10M7 3.5L10 6.5L7 9.5" stroke="white" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </button>
+  </div>
+</div>
+
+
+<!-- ═══════════════════════════════════════════
+     STEP 3 — REVIEW & REVISION LOOP
+     ═══════════════════════════════════════════ -->
+<div class="step" id="step3" style="max-width:1100px;margin:0 auto;padding:28px 20px 60px;">
+
+  <!-- Review header -->
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;flex-wrap:wrap;gap:10px;">
+    <div>
+      <div style="font-size:20px;font-weight:700;font-family:'Cormorant Garamond',serif;">Review & Approve</div>
+      <div style="font-size:12px;color:var(--muted);margin-top:2px;" id="review-subtitle">Approve individual shots or request revisions</div>
+    </div>
+    <div style="display:flex;gap:8px;align-items:center;">
+      <div id="approval-progress" style="font-size:12px;font-weight:600;color:var(--dark);padding:6px 14px;background:var(--bg);border-radius:8px;border:1px solid var(--bdr);">
+        <span id="approved-count">0</span> / <span id="total-count">0</span> Approved
+      </div>
+      <button class="btn btn-success" onclick="downloadAllApproved()" id="dl-all-btn">
+        <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M6.5 1.5V9M6.5 9L3.5 6M6.5 9L9.5 6M2 11H11" stroke="white" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        Download Approved
+      </button>
+    </div>
+  </div>
+
+  <!-- 2-col: shot grid + log -->
+  <div style="display:grid;grid-template-columns:1fr 300px;gap:18px;align-items:start;">
+
+    <!-- Shot grid -->
+    <div class="shots-grid" id="review-grid"></div>
+
+    <!-- Photographer's Log -->
+    <div style="background:white;border:1.5px solid var(--bdr);border-radius:10px;overflow:hidden;position:sticky;top:70px;">
+      <div style="padding:10px 13px;border-bottom:1px solid var(--bdr);display:flex;align-items:center;justify-content:space-between;">
+        <div style="display:flex;align-items:center;gap:7px;">
+          <div class="glow" style="width:7px;height:7px;border-radius:50%;background:var(--success);"></div>
+          <span style="font-size:12.5px;font-weight:700;">Photographer's Log</span>
+        </div>
+        <span style="font-size:9.5px;font-weight:600;color:var(--muted);font-family:'JetBrains Mono',monospace;">LIVE</span>
+      </div>
+      <div class="log-term" id="log-panel" style="height:340px;overflow-y:auto;padding:10px 12px;"></div>
+      <div style="padding:8px 12px;border-top:1px solid var(--bdr);">
+        <div style="display:flex;align-items:center;gap:6px;padding:6px 10px;border:1.5px solid var(--bdr);border-radius:7px;background:var(--bg);">
+          <input type="text" id="log-input" placeholder="Note a revision…" style="flex:1;border:none;background:transparent;outline:none;font-size:11.5px;font-family:'JetBrains Mono',monospace;" onkeydown="if(event.key==='Enter')submitLogNote()">
+          <button onclick="submitLogNote()" style="width:22px;height:22px;background:var(--dark);border:none;border-radius:4px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+            <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M2 5H8.5M6 2.5L8.5 5L6 7.5" stroke="white" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+
+<!-- ═══════════════════════════════════════════
+     REVISION MODAL
+     ═══════════════════════════════════════════ -->
+<div class="modal" id="revise-modal">
+  <div class="fadeUp" style="background:white;border-radius:14px;padding:24px;width:500px;max-width:95vw;border:1.5px solid var(--bdr);">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+      <div style="font-size:16px;font-weight:700;font-family:'Cormorant Garamond',serif;">Request Revision</div>
+      <button onclick="closeReviseModal()" style="width:28px;height:28px;border-radius:6px;border:1.5px solid var(--bdr);background:white;cursor:pointer;display:flex;align-items:center;justify-content:center;">
+        <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M2 2L8 8M8 2L2 8" stroke="var(--muted)" stroke-width="1.5" stroke-linecap="round"/></svg>
+      </button>
+    </div>
+    <div style="font-size:12.5px;font-weight:600;color:var(--muted);margin-bottom:6px;" id="revise-shot-label">Shot: Lateral</div>
+    <div id="revise-current-img" style="aspect-ratio:1;border-radius:8px;overflow:hidden;margin-bottom:14px;background:var(--bg);max-height:180px;display:flex;align-items:center;justify-content:center;">
+      <img id="revise-preview" src="" style="max-height:180px;max-width:100%;object-fit:contain;" alt="">
+    </div>
+    <label style="font-size:12px;font-weight:600;display:block;margin-bottom:5px;">Describe what to change</label>
+    <textarea id="revise-note" placeholder="e.g. The sole looks too dark — make it lighter. Add more dramatic shadows. The angle needs to show the heel better…" style="min-height:80px;"></textarea>
+    <div style="display:flex;gap:8px;margin-top:14px;">
+      <button class="btn btn-outline" onclick="closeReviseModal()" style="flex:1;justify-content:center;">Cancel</button>
+      <button class="btn btn-danger" onclick="submitRevision()" id="revise-submit-btn" style="flex:1;justify-content:center;">
+        <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M10 2L2 10M2 2L10 10" stroke="white" stroke-width="1.6" stroke-linecap="round"/></svg>
+        Apply Revision
+      </button>
+    </div>
+  </div>
+</div>
+
+
+<!-- ═══════════════════════════════════════════
+     JAVASCRIPT
+     ═══════════════════════════════════════════ -->
+<script>
+/* ─────────────────────────────────────────────
+   APP STATE
+   ───────────────────────────────────────────── */
+const APP = {
+  apiKey: sessionStorage.getItem('aag_key') || '',
+  imageB64: null,
+  imageMime: 'image/jpeg',
+  brief: {},
+  shots: [],
+  currentReviseId: null,
+  logLines: [],
+};
+
+const SHOT_DEFS = [
+  { id:'lateral',  label:'Lateral (Side)',    angle:'lateral side profile, full product from left, horizontal orientation' },
+  { id:'medial',   label:'Medial (Inside)',    angle:'medial inside view, inner arch side, right to left orientation' },
+  { id:'top_down', label:'Top-down',           angle:'top-down overhead flat lay view, bird\'s eye, looking straight down' },
+  { id:'front_45', label:'45° Front',          angle:'three-quarter front 45-degree angle, dynamic diagonal composition' },
+  { id:'heel',     label:'Heel View',          angle:'rear heel view from behind, back of product, heel counter prominent' },
+  { id:'outsole',  label:'Outsole (Bottom)',   angle:'outsole bottom view, product flipped upside down, tread pattern visible' },
+];
+
+/* ─────────────────────────────────────────────
+   API KEY
+   ───────────────────────────────────────────── */
+function saveKey() {
+  const k = document.getElementById('api-key-input').value.trim();
+  if (!k) return alert('Please enter your API key.');
+  APP.apiKey = k;
+  sessionStorage.setItem('aag_key', k);
+  refreshKeyUI();
+  document.getElementById('api-key-input').value = '';
+  document.getElementById('gen-mode-note').textContent = '✦ Claude Enhanced — vision analysis will enrich your shot prompts.';
+  document.getElementById('gen-mode-note').style.color = 'var(--success)';
+}
+function clearKey() { APP.apiKey = ''; sessionStorage.removeItem('aag_key'); refreshKeyUI(); }
+function refreshKeyUI() {
+  const badge = document.getElementById('key-badge');
+  badge.style.display = APP.apiKey ? 'flex' : 'none';
+  document.getElementById('gen-mode-note').textContent = APP.apiKey
+    ? '✦ Claude Enhanced — vision analysis will enrich your shot prompts.'
+    : '✦ Basic mode — prompts built from brief. Add API key above for Claude vision analysis.';
+  document.getElementById('gen-mode-note').style.color = APP.apiKey ? 'var(--success)' : '';
+}
+function dismissKeySetup() { document.getElementById('key-setup').style.display='none'; }
+
+/* ─────────────────────────────────────────────
+   IMAGE UPLOAD
+   ───────────────────────────────────────────── */
+function handleDragOver(e) { e.preventDefault(); document.getElementById('drop-zone').classList.add('drag-over'); }
+function handleDragLeave(e) { document.getElementById('drop-zone').classList.remove('drag-over'); }
+function handleDrop(e) { e.preventDefault(); document.getElementById('drop-zone').classList.remove('drag-over'); const f = e.dataTransfer.files[0]; if (f) processFile(f); }
+function handleFileSelect(e) { const f = e.target.files[0]; if (f) processFile(f); }
+function clearImage(e) { e.stopPropagation(); APP.imageB64 = null; document.getElementById('upload-preview').style.display='none'; document.getElementById('upload-placeholder').style.display='block'; document.getElementById('file-input').value=''; }
+
+function processFile(file) {
+  if (!file.type.startsWith('image/')) return alert('Please upload an image file.');
+  const reader = new FileReader();
+  reader.onload = async (e) => {
+    document.getElementById('upload-placeholder').style.display = 'none';
+    document.getElementById('upload-preview').style.display = 'block';
+    document.getElementById('preview-img').src = e.target.result;
+    document.getElementById('preview-filename').textContent = file.name + ' · ' + (file.size / 1024 / 1024).toFixed(1) + 'MB';
+    // Compress for Claude API
+    APP.imageMime = file.type || 'image/jpeg';
+    APP.imageB64 = await compressToBase64(e.target.result);
+  };
+  reader.readAsDataURL(file);
+}
+
+async function compressToBase64(dataUrl) {
+  return new Promise((res) => {
+    const img = new Image();
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      let w = img.width, h = img.height, max = 1024;
+      if (w > max || h > max) {
+        if (w > h) { h = Math.round(h * max / w); w = max; }
+        else { w = Math.round(w * max / h); h = max; }
+      }
+      canvas.width = w; canvas.height = h;
+      canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+      const compressed = canvas.toDataURL('image/jpeg', 0.85);
+      res(compressed.split(',')[1]);
+    };
+    img.src = dataUrl;
+  });
+}
+
+/* ─────────────────────────────────────────────
+   NAVIGATION
+   ───────────────────────────────────────────── */
+function showStep(n) {
+  document.querySelectorAll('.step').forEach(s => s.classList.remove('active'));
+  document.getElementById('step' + n).classList.add('active');
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+  updateStepper(n);
+  if (n > 1) document.getElementById('new-session-btn').style.display = 'inline-flex';
+}
+
+function updateStepper(step) {
+  const pn1 = document.getElementById('pn1');
+  const pn2 = document.getElementById('pn2');
+  const pl2sub = document.getElementById('pl2-sub');
+  const p3wrap = document.getElementById('phase3-wrap');
+  const pc2 = document.getElementById('pc2');
+
+  if (step === 1) {
+    pn1.style.background = 'var(--dark)';
+    pn2.style.background = 'var(--gold)'; pn2.className = 'phase-node pulse';
+    pn2.innerHTML = '<span style="font-size:11px;font-weight:800;color:white;">2</span>';
+    pl2sub.textContent = '● Upcoming'; pl2sub.style.color = 'var(--gold)';
+    p3wrap.style.opacity = '.45'; pc2.style.background = 'var(--bdr)';
+  } else if (step === 2) {
+    pn2.className = 'phase-node pulse'; pn2.style.background = 'var(--gold)';
+    pl2sub.textContent = '● Active'; pl2sub.style.color = 'var(--gold)';
+    p3wrap.style.opacity = '.45'; pc2.style.background = 'linear-gradient(to right,var(--gold),var(--bdr))';
+  } else if (step === 3) {
+    pn2.className = 'phase-node'; pn2.style.background = 'var(--dark)';
+    pn2.innerHTML = '<svg width="11" height="11" viewBox="0 0 11 11" fill="none"><path d="M2 5.5L4.5 8L9 3" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+    pl2sub.textContent = '✓ Done'; pl2sub.style.color = 'var(--success)';
+    p3wrap.style.opacity = '1'; pc2.style.background = 'linear-gradient(to right,var(--dark),var(--gold))';
+  }
+}
+
+function newSession() {
+  if (!confirm('Start a new session? Current work will be lost.')) return;
+  APP.imageB64 = null; APP.brief = {}; APP.shots = [];
+  document.getElementById('upload-preview').style.display = 'none';
+  document.getElementById('upload-placeholder').style.display = 'block';
+  document.getElementById('file-input').value = '';
+  document.getElementById('gen-grid').innerHTML = '';
+  document.getElementById('review-grid').innerHTML = '';
+  document.getElementById('log-panel').innerHTML = '';
+  showStep(1);
+  document.getElementById('new-session-btn').style.display = 'none';
+}
+
+/* ─────────────────────────────────────────────
+   MAIN GENERATION FLOW
+   ───────────────────────────────────────────── */
+async function startGeneration() {
+  const brand = document.getElementById('f-brand').value.trim();
+  const product = document.getElementById('f-product').value.trim();
+  if (!brand || !product) { alert('Please enter Brand Name and Product Name.'); return; }
+  if (!APP.imageB64) { alert('Please upload a product image.'); return; }
+
+  APP.brief = {
+    brand, product,
+    desc: document.getElementById('f-desc').value.trim(),
+    style: document.getElementById('f-style').value,
+    lighting: document.getElementById('f-lighting').value,
+    keyPoints: document.getElementById('f-keypoints').value.trim(),
+    palette: document.getElementById('f-palette').value.trim(),
+  };
+
+  const selectedIds = [...document.querySelectorAll('.shot-check:checked')].map(c => c.value);
+  APP.shots = SHOT_DEFS.filter(d => selectedIds.includes(d.id)).map(d => ({
+    ...d, prompt: '', imageUrl: '', status: 'pending', seed: Math.floor(Math.random() * 99999), revisions: []
+  }));
+
+  if (APP.shots.length === 0) { alert('Select at least one shot type.'); return; }
+
+  document.getElementById('gen-btn').disabled = true;
+  showStep(2);
+  buildGenGrid();
+  updateProgress(0, APP.shots.length, 'Initialising…');
+
+  // ANALYSIS
+  let prompts;
+  try {
+    if (APP.apiKey) {
+      setAnalysisState(true, 'Analysing product with Claude Vision…');
+      prompts = await analyseWithClaude();
+      setAnalysisState(false, 'Claude Vision analysis complete — generating shots');
+    } else {
+      setAnalysisState(true, 'Building prompts from creative brief…');
+      await delay(900);
+      prompts = buildFallbackPrompts();
+      setAnalysisState(false, 'Prompts ready — launching Pollinations image generation');
+    }
+  } catch (err) {
+    setAnalysisState(false, 'Analysis error — using brief-based prompts: ' + err.message);
+    prompts = buildFallbackPrompts();
+  }
+
+  // Assign prompts to shots
+  APP.shots.forEach(s => { s.prompt = prompts[s.id] || buildSingleFallbackPrompt(s.id, APP.brief); });
+
+  // GENERATE IMAGES in parallel
+  updateProgress(0, APP.shots.length, 'Generating images via Pollinations.ai…');
+  await Promise.allSettled(APP.shots.map((s, i) => generateShotImage(s, i)));
+
+  updateProgress(APP.shots.length, APP.shots.length, 'All shots complete!');
+  document.getElementById('review-cta').style.display = 'block';
+  document.getElementById('review-cta').classList.add('fadeUp');
+  setTimeout(() => goToReview(), 1800);
+}
+
+/* ─────────────────────────────────────────────
+   CLAUDE VISION ANALYSIS
+   ───────────────────────────────────────────── */
+async function analyseWithClaude() {
+  const b = APP.brief;
+  const shotList = APP.shots.map(s => `"${s.id}": ${s.label} (${s.angle})`).join('\n');
+
+  const systemPrompt = `You are an expert AI product photographer for aag.ai fashion studio. You generate precise, detailed product photography prompts optimised for AI image generation (Stable Diffusion / Flux models). Your prompts are 50-70 words each, technically accurate, and commercially polished.`;
+
+  const userPrompt = `Analyse this product image and creative brief. Generate photography prompts for each shot angle.
+
+Creative Brief:
+- Brand: ${b.brand}
+- Product: ${b.product} — ${b.desc}
+- Visual Direction: ${b.style}
+- Lighting: ${b.lighting}
+- Key Selling Points: ${b.keyPoints}
+- Color Palette: ${b.palette}
+
+Required shots and their angles:
+${shotList}
+
+Instructions:
+- Each prompt must describe the exact angle, the product clearly, the lighting, and the background
+- Include "pure white studio background, product photography" for all e-commerce shots
+- Include brand/product name for brand recognition
+- Make prompts precise for AI image generation (no ambiguity)
+
+Respond ONLY with valid JSON (no markdown, no preamble):
+{
+  "analysis": {
+    "product_type": "...",
+    "primary_colors": ["...", "..."],
+    "key_materials": ["...", "..."],
+    "style_notes": "..."
+  },
+  "prompts": {
+    ${APP.shots.map(s => `"${s.id}": "..."`).join(',\n    ')}
+  }
+}`;
+
+  const res = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': APP.apiKey,
+      'anthropic-version': '2023-06-01',
+      'anthropic-dangerous-direct-browser-access': 'true',
+    },
+    body: JSON.stringify({
+      model: 'claude-opus-4-5',
+      max_tokens: 2000,
+      system: systemPrompt,
+      messages: [{
+        role: 'user',
+        content: [
+          { type: 'image', source: { type: 'base64', media_type: APP.imageMime, data: APP.imageB64 } },
+          { type: 'text', text: userPrompt }
+        ]
+      }]
+    })
+  });
+
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err?.error?.message || `API ${res.status}`);
+  }
+
+  const data = await res.json();
+  const text = data.content.filter(c => c.type === 'text').map(c => c.text).join('');
+  // Strip markdown fences if any
+  const clean = text.replace(/```json|```/gi, '').trim();
+  const parsed = JSON.parse(clean);
+
+  // Show analysis chips
+  if (parsed.analysis) {
+    const a = parsed.analysis;
+    const chips = document.getElementById('analysis-chips');
+    chips.innerHTML = '';
+    [a.product_type, ...(a.primary_colors||[]), ...(a.key_materials||[])].filter(Boolean).forEach(t => {
+      const chip = document.createElement('span');
+      chip.className = 'analysis-chip';
+      chip.textContent = t;
+      chips.appendChild(chip);
+    });
+    document.getElementById('analysis-body').textContent = a.style_notes || 'Analysis complete.';
+  }
+
+  return parsed.prompts || {};
+}
+
+/* ─────────────────────────────────────────────
+   FALLBACK PROMPTS (no API key)
+   ───────────────────────────────────────────── */
+function buildFallbackPrompts() {
+  const prompts = {};
+  APP.shots.forEach(s => { prompts[s.id] = buildSingleFallbackPrompt(s.id, APP.brief); });
+  return prompts;
+}
+
+function buildSingleFallbackPrompt(shotId, b) {
+  const def = SHOT_DEFS.find(d => d.id === shotId);
+  const styleMap = {
+    'High-Energy Athletic': 'dynamic athletic composition, bold contrast, energetic styling',
+    'Urban Minimalist': 'clean minimal aesthetic, geometric composition, architectural precision',
+    'Luxury Premium': 'luxury editorial, soft even tones, premium feel, polished surfaces',
+    'Earthy & Natural': 'organic natural aesthetic, warm earthen tones, textural richness',
+    'Bold Streetwear': 'bold streetwear aesthetic, high-energy urban composition, vivid contrast',
+    'Clean Tech': 'clean futuristic tech aesthetic, precise lines, minimal modern composition',
+  };
+  const styleDesc = styleMap[b.style] || b.style;
+  const palette = b.palette ? `, ${b.palette} color palette` : '';
+  const kp = b.keyPoints ? `, showcasing ${b.keyPoints}` : '';
+  return `${b.brand || 'brand'} ${b.product || 'shoe'}, ${def.angle}, professional product photography, pure white studio background, ${styleDesc}, ${b.lighting}, sharp focus 8k high-resolution commercial photography${palette}${kp}, isolated product, clean studio environment`.trim();
+}
+
+/* ─────────────────────────────────────────────
+   IMAGE GENERATION (Pollinations.ai)
+   ───────────────────────────────────────────── */
+async function generateShotImage(shot, index) {
+  setCardStatus(shot.id, 'generating');
+  try {
+    const url = buildPollinationsUrl(shot.prompt, shot.seed);
+    shot.imageUrl = url;
+    await loadImageIntoCard(shot.id, url, 'gen');
+    shot.status = 'ready';
+    setCardStatus(shot.id, 'ready');
+    const done = APP.shots.filter(s => s.status !== 'pending' && s.status !== 'generating').length;
+    updateProgress(done, APP.shots.length, `Generated: ${done}/${APP.shots.length}`);
+    addLog('ok', `${shot.label} — image ready`);
+  } catch (e) {
+    shot.status = 'error';
+    setCardStatus(shot.id, 'error');
+    addLog('warn', `${shot.label} — generation failed: ${e.message}`);
+  }
+}
+
+function buildPollinationsUrl(prompt, seed) {
+  const encoded = encodeURIComponent(prompt.slice(0, 900)); // URL length limit
+  return `https://image.pollinations.ai/prompt/${encoded}?width=1024&height=1024&seed=${seed}&nologo=true&model=flux`;
+}
+
+async function loadImageIntoCard(shotId, url, gridId) {
+  return new Promise((resolve, reject) => {
+    const grid = gridId === 'gen' ? 'gen-grid' : 'review-grid';
+    const card = document.getElementById(`card-${gridId}-${shotId}`);
+    if (!card) { reject(new Error('Card not found')); return; }
+    const imgEl = card.querySelector('img');
+    const shimmer = card.querySelector('.shimmer-cover');
+    imgEl.onload = () => { imgEl.classList.add('loaded'); if (shimmer) shimmer.style.display = 'none'; resolve(); };
+    imgEl.onerror = () => reject(new Error('Image failed to load'));
+    imgEl.src = url;
+  });
+}
+
+/* ─────────────────────────────────────────────
+   GRID BUILDERS
+   ───────────────────────────────────────────── */
+function buildGenGrid() {
+  const grid = document.getElementById('gen-grid');
+  grid.innerHTML = '';
+  APP.shots.forEach(s => { grid.appendChild(buildCard(s, 'gen', false)); });
+}
+
+function buildReviewGrid() {
+  const grid = document.getElementById('review-grid');
+  grid.innerHTML = '';
+  APP.shots.forEach(s => { grid.appendChild(buildCard(s, 'review', true)); });
+  document.getElementById('total-count').textContent = APP.shots.length;
+  updateApprovedCount();
+}
+
+function buildCard(shot, prefix, withActions) {
+  const div = document.createElement('div');
+  div.className = 'shot-card fadeUp';
+  div.id = `card-${prefix}-${shot.id}`;
+  const isReady = shot.status === 'ready' || shot.status === 'approved';
+  div.innerHTML = `
+    <div class="img-box">
+      <div class="shimmer shimmer-cover" ${isReady ? 'style="display:none;"' : ''}></div>
+      <img src="${isReady ? shot.imageUrl : ''}" alt="${shot.label}" ${isReady && shot.imageUrl ? 'class="loaded"' : ''}>
+    </div>
+    <div style="padding:10px 11px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
+        <span style="font-size:12px;font-weight:700;">${shot.label}</span>
+        <span id="badge-${prefix}-${shot.id}">${renderBadge(shot.status)}</span>
+      </div>
+      <div style="font-size:10px;color:var(--muted);font-family:'JetBrains Mono',monospace;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="${escHtml(shot.prompt)}" id="prompt-${prefix}-${shot.id}">${shot.prompt ? shot.prompt.slice(0, 72) + '…' : 'Generating prompt…'}</div>
+      ${withActions ? `
+      <div style="display:flex;gap:5px;margin-top:8px;flex-wrap:wrap;">
+        <button class="btn btn-success btn-xs" onclick="approveShot('${shot.id}')" id="approve-btn-${shot.id}">✓ Approve</button>
+        <button class="btn btn-outline btn-xs" onclick="openReviseModal('${shot.id}')">✎ Revise</button>
+        <button class="btn btn-outline btn-xs" onclick="regenerateShot('${shot.id}')">↺ Regen</button>
+        <button class="btn btn-primary btn-xs" onclick="downloadShot('${shot.id}')" style="margin-left:auto;">↓</button>
+      </div>` : ''}
+    </div>`;
+  return div;
+}
+
+function renderBadge(status) {
+  const map = {
+    pending:    '<span class="badge" style="background:#F1F5F9;color:#64748B;">● Pending</span>',
+    generating: '<span class="badge" style="background:var(--gold-s);color:#78530A;">⟳ Generating</span>',
+    ready:      '<span class="badge" style="background:#EEF2FF;color:#3730A3;">✦ Ready</span>',
+    approved:   '<span class="badge" style="background:#DCFCE7;color:#15803D;">✓ Approved</span>',
+    revising:   '<span class="badge" style="background:#FEF3C7;color:#92400E;">⤷ Revising</span>',
+    error:      '<span class="badge" style="background:#FEE2E2;color:#B91C1C;">✕ Error</span>',
+  };
+  return map[status] || map.pending;
+}
+
+function setCardStatus(shotId, status, prefix = 'gen') {
+  const b = document.getElementById(`badge-${prefix}-${shotId}`);
+  if (b) b.innerHTML = renderBadge(status);
+  const card = document.getElementById(`card-${prefix}-${shotId}`);
+  if (card) {
+    card.classList.remove('approved', 'error');
+    if (status === 'approved') card.classList.add('approved');
+    if (status === 'error') card.classList.add('error');
+  }
+}
+
+/* ─────────────────────────────────────────────
+   REVIEW ACTIONS
+   ───────────────────────────────────────────── */
+function approveShot(id) {
+  const shot = APP.shots.find(s => s.id === id);
+  if (!shot || shot.status === 'generating') return;
+  shot.status = 'approved';
+  setCardStatus(id, 'approved', 'review');
+  updateApprovedCount();
+  addLog('ok', `${shot.label} — APPROVED ✓`);
+  const btn = document.getElementById(`approve-btn-${id}`);
+  if (btn) { btn.textContent = '✓ Approved'; btn.style.background = '#DCFCE7'; btn.style.color = '#15803D'; btn.disabled = true; }
+}
+
+function updateApprovedCount() {
+  const n = APP.shots.filter(s => s.status === 'approved').length;
+  document.getElementById('approved-count').textContent = n;
+  document.getElementById('total-count').textContent = APP.shots.length;
+}
+
+async function regenerateShot(id) {
+  const shot = APP.shots.find(s => s.id === id);
+  if (!shot) return;
+  shot.seed = Math.floor(Math.random() * 99999);
+  shot.status = 'generating';
+  setCardStatus(id, 'generating', 'review');
+  addLog('ai', `Regenerating ${shot.label} with new seed #${shot.seed}…`);
+  try {
+    const url = buildPollinationsUrl(shot.prompt, shot.seed);
+    shot.imageUrl = url;
+    // Update card image
+    const card = document.getElementById(`card-review-${id}`);
+    const imgEl = card?.querySelector('img');
+    const shimmer = card?.querySelector('.shimmer-cover');
+    if (imgEl) { imgEl.classList.remove('loaded'); imgEl.src = ''; }
+    if (shimmer) shimmer.style.display = 'block';
+    await loadImageIntoCard(id, url, 'review');
+    shot.status = 'ready';
+    setCardStatus(id, 'ready', 'review');
+    addLog('ok', `${shot.label} — regenerated ✓`);
+  } catch (e) {
+    shot.status = 'error';
+    setCardStatus(id, 'error', 'review');
+    addLog('warn', `${shot.label} — regen failed`);
+  }
+}
+
+/* ─────────────────────────────────────────────
+   REVISION MODAL
+   ───────────────────────────────────────────── */
+function openReviseModal(id) {
+  APP.currentReviseId = id;
+  const shot = APP.shots.find(s => s.id === id);
+  document.getElementById('revise-shot-label').textContent = 'Shot: ' + shot.label;
+  document.getElementById('revise-preview').src = shot.imageUrl || '';
+  document.getElementById('revise-note').value = '';
+  document.getElementById('revise-modal').classList.add('open');
+}
+function closeReviseModal() { document.getElementById('revise-modal').classList.remove('open'); APP.currentReviseId = null; }
+
+async function submitRevision() {
+  const id = APP.currentReviseId;
+  const note = document.getElementById('revise-note').value.trim();
+  if (!note) { alert('Please describe what needs to change.'); return; }
+
+  const shot = APP.shots.find(s => s.id === id);
+  shot.revisions.push(note);
+  closeReviseModal();
+
+  shot.status = 'revising';
+  setCardStatus(id, 'revising', 'review');
+  addLog('usr', `Revision: "${note.slice(0, 60)}${note.length > 60 ? '…' : ''}" for ${shot.label}`);
+
+  // Refine prompt
+  try {
+    if (APP.apiKey) {
+      addLog('ai', `Claude refining prompt for ${shot.label}…`);
+      shot.prompt = await refinePromptWithClaude(shot, note);
+    } else {
+      shot.prompt = `${shot.prompt}, ${note}, highly detailed`;
+    }
+    addLog('ai', `Prompt updated — regenerating image…`);
+  } catch (e) {
+    shot.prompt = `${shot.prompt}, ${note}`;
+    addLog('warn', `Prompt refinement failed, appending note to prompt`);
+  }
+
+  // Update prompt display
+  const pd = document.getElementById(`prompt-review-${id}`);
+  if (pd) pd.textContent = shot.prompt.slice(0, 72) + '…';
+  pd?.setAttribute('title', shot.prompt);
+
+  // Regenerate
+  shot.seed = Math.floor(Math.random() * 99999);
+  const card = document.getElementById(`card-review-${id}`);
+  const imgEl = card?.querySelector('img');
+  const shimmer = card?.querySelector('.shimmer-cover');
+  if (imgEl) { imgEl.classList.remove('loaded'); imgEl.src = ''; }
+  if (shimmer) shimmer.style.display = 'block';
+  try {
+    const url = buildPollinationsUrl(shot.prompt, shot.seed);
+    shot.imageUrl = url;
+    await loadImageIntoCard(id, url, 'review');
+    shot.status = 'ready';
+    setCardStatus(id, 'ready', 'review');
+    addLog('ok', `${shot.label} — revision applied ✓`);
+  } catch (e) {
+    shot.status = 'error';
+    setCardStatus(id, 'error', 'review');
+    addLog('warn', `${shot.label} — revision render failed`);
+  }
+}
+
+async function refinePromptWithClaude(shot, note) {
+  const res = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': APP.apiKey,
+      'anthropic-version': '2023-06-01',
+      'anthropic-dangerous-direct-browser-access': 'true',
+    },
+    body: JSON.stringify({
+      model: 'claude-opus-4-5',
+      max_tokens: 300,
+      messages: [{
+        role: 'user',
+        content: `You are a product photography prompt engineer. Refine this AI image generation prompt based on the revision note.
+
+Original prompt:
+${shot.prompt}
+
+Revision requested:
+${note}
+
+Return ONLY the revised prompt text (50-80 words), no explanation, no quotes, no markdown.`
+      }]
+    })
+  });
+  const data = await res.json();
+  return data.content[0]?.text?.trim() || shot.prompt;
+}
+
+/* ─────────────────────────────────────────────
+   DOWNLOAD
+   ───────────────────────────────────────────── */
+function downloadShot(id) {
+  const shot = APP.shots.find(s => s.id === id);
+  if (!shot?.imageUrl) return alert('Image not ready yet.');
+  window.open(shot.imageUrl, '_blank');
+  addLog('sys', `Opening ${shot.label} for download…`);
+}
+
+function downloadAllApproved() {
+  const approved = APP.shots.filter(s => s.status === 'approved');
+  if (approved.length === 0) { alert('Approve at least one shot first.'); return; }
+  approved.forEach((s, i) => setTimeout(() => window.open(s.imageUrl, '_blank'), i * 400));
+  addLog('ok', `Downloading ${approved.length} approved shots…`);
+}
+
+/* ─────────────────────────────────────────────
+   TRANSITION TO REVIEW
+   ───────────────────────────────────────────── */
+function goToReview() {
+  buildReviewGrid();
+  showStep(3);
+  addLog('sys', 'Review session started');
+  addLog('ai', `${APP.shots.length} shots ready for approval`);
+  addLog('ai', 'Use ✓ Approve, ✎ Revise, or ↺ Regen on each shot');
+  // Sync images to review grid
+  APP.shots.forEach(s => {
+    if (s.imageUrl) {
+      const card = document.getElementById(`card-review-${s.id}`);
+      const imgEl = card?.querySelector('img');
+      const shimmer = card?.querySelector('.shimmer-cover');
+      if (imgEl) { imgEl.src = s.imageUrl; imgEl.onload = () => { imgEl.classList.add('loaded'); if (shimmer) shimmer.style.display = 'none'; }; }
+    }
+  });
+}
+
+/* ─────────────────────────────────────────────
+   LOG
+   ───────────────────────────────────────────── */
+function addLog(type, msg) {
+  const panel = document.getElementById('log-panel');
+  if (!panel) return;
+  const now = new Date();
+  const ts = `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}:${String(now.getSeconds()).padStart(2,'0')}`;
+  const tagMap = { ok:'l-ok', ai:'l-ai', usr:'l-usr', sys:'l-sys', warn:'l-warn' };
+  const labelMap = { ok:'OK  ', ai:'AI  ', usr:'USR ', sys:'SYS ', warn:'WARN' };
+  const msgMap = { ok:'l-cok', ai:'l-c', usr:'l-c', sys:'l-c', warn:'l-cwarn' };
+  const div = document.createElement('div');
+  div.innerHTML = `<span class="l-ts">[${ts}]</span> <span class="${tagMap[type]}">${labelMap[type]}</span> <span class="${msgMap[type]}">${escHtml(msg)}</span>`;
+  panel.appendChild(div);
+  panel.scrollTop = panel.scrollHeight;
+}
+
+function submitLogNote() {
+  const v = document.getElementById('log-input').value.trim();
+  if (!v) return;
+  addLog('usr', `"${v}"`);
+  document.getElementById('log-input').value = '';
+  setTimeout(() => addLog('ai', 'Note logged.'), 400);
+}
+
+/* ─────────────────────────────────────────────
+   UI HELPERS
+   ───────────────────────────────────────────── */
+function setAnalysisState(loading, text) {
+  document.getElementById('analysis-spinner').style.display = loading ? 'flex' : 'none';
+  document.getElementById('analysis-title').textContent = text;
+}
+
+function updateProgress(done, total, label) {
+  const pct = total > 0 ? Math.round((done / total) * 100) : 0;
+  document.getElementById('gen-progress').style.width = pct + '%';
+  document.getElementById('gen-status-text').textContent = label;
+  document.getElementById('gen-count-text').textContent = `${done} / ${total}`;
+}
+
+function delay(ms) { return new Promise(r => setTimeout(r, ms)); }
+function escHtml(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+/* ─────────────────────────────────────────────
+   INIT
+   ───────────────────────────────────────────── */
+window.addEventListener('load', () => { refreshKeyUI(); });
+</script>
+
+</body>
+</html>
